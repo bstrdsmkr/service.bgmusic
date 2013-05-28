@@ -4,8 +4,9 @@
         <setting label="32001" type="file"     id="playlist"    default=""    source="special://musicplaylists"/>
         <setting label="32002" type="slider" id="threshold" default="20" range="1,60"   option="int"/>
         <setting label="32003" type="slider" id="volume"    default="20" range="1,100" option="int" />
+        <setting label="32011" type="bool" id="rem_volume_changes" default="true"/>
         <setting label="32004" type="bool"   id="shuffle"     default="true"/>
-        <setting label="32005" type="leabelenum" id="repeat"    default="All" values="Off|One|All"/>
+        <setting label="32005" type="labelenum" id="repeat"    default="No Change" values="No Change|Off|One|All"/>
         <setting label="32006" type="bool"   id="always_active"     default="true"/>
         <setting label="32007" type="enum" id="start_hr"    default="10" enable="eq(-1,false)" values="00|01|02|03|04|05|06|07|08|09|10|11|12|13|14|15|16|17|18|19|20|21|22|23"/>
         <setting label="32008" type="enum" id="start_min"  default="00" enable="eq(-2,false)" values="00|01|02|03|04|05|06|07|08|09|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39|40|41|42|43|44|45|46|47|48|49|50|51|52|53|54|55|56|57|58|59"/>
