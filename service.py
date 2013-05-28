@@ -14,6 +14,7 @@ class Service(xbmc.Player):
         xbmc.Player.__init__(self)
         self.old_volume = 50
         self.idling = False
+        self.queued = False
 
     def is_armed(self):
         if __addon__.getSetting('always_active') == 'true':
@@ -28,15 +29,31 @@ class Service(xbmc.Player):
                 return True
         return False
 
+    def onPlayBackStarted(self):
+        if self.idling:
+            if self.queued:
+                self.queued = False
+            else:
+                xbmc.log('BGMusic: User started playback, restoring volume')
+                self.idling = False
+                builtin = "SetVolume(%s)" % self.old_volume
+                xbmc.executebuiltin(builtin)
+
     def onPlayBackStopped(self):
         if self.idling:
             xbmc.log('BGMusic: Playback stopped, restoring volume')
             self.idling = False
+            track_volume = __addon__.getSetting('rem_volume_changes') == 'true'
+            if track_volume:
+                __addon__.setSetting('volume', get_volume())
             builtin = "SetVolume(%s)" % self.old_volume
             xbmc.executebuiltin(builtin)
 
     def onPlayBackEnded(self):
         if self.idling:
+            track_volume = __addon__.getSetting('rem_volume_changes') == 'true'
+            if track_volume:
+                __addon__.setSetting('volume', get_volume())
             total = xbmc.getInfoLabel('Playlist.Length')
             current = xbmc.getInfoLabel('Playlist.Position')
             if total == current:
@@ -46,9 +63,11 @@ class Service(xbmc.Player):
                 xbmc.executebuiltin(builtin)
 
     def onQueueNextItem(self):
-        track_volume = __addon__.getSetting('rem_volume_changes') == 'true'
-        if track_volume and self.idling:
-            __addon__.setSetting('volume', get_volume())
+        if self.idling:
+            self.queued = True
+            track_volume = __addon__.getSetting('rem_volume_changes') == 'true'
+            if track_volume:
+                __addon__.setSetting('volume', get_volume())
 
 
 def get_volume():
