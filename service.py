@@ -9,23 +9,43 @@ __id__ = 'service.bgmusic'
 __addon__ = xbmcaddon.Addon(__id__)
 
 
-class Service(xbmc.Player):
+class monitor_service(xbmc.Player):
     def __init__(self, *args, **kwargs):
-        xbmc.Player.__init__(self)
+        xbmc.Player.__init__(self, *args, **kwargs)
         self.old_volume = 50
+        self.last_stopped = datetime.datetime.now()
         self.idling = False
         self.queued = False
 
-    def is_armed(self):
+    def conditions_met(self):
+        curr_time = datetime.datetime.now()
+        current_idle = divmod(int(xbmc.getGlobalIdleTime()), 60)[0]
+        threshold = int(float(__addon__.getSetting('threshold')))
+
+        # Have we been idle long enough?
+        if current_idle < threshold:
+            return False
+
+        # Are we already playing something?
+        if self.isPlaying():
+            return False
+
+        # Has it been long enough since something stopped playing?
+        time_since_stop = curr_time - self.last_stopped
+        if time_since_stop < threshold:
+            return False
+
+        # Are we supposed to always play?
         if __addon__.getSetting('always_active') == 'true':
             return True
-        time = datetime.datetime.now().time()
+
+        # Are we supposed to play at this time of day?
         start_hr = int(__addon__.getSetting('start_hr'))
         start_min = int(__addon__.getSetting('start_min'))
-        if time > datetime.time(start_hr, start_min):
+        if curr_time.time() > datetime.time(start_hr, start_min):
             stop_hr = int(__addon__.getSetting('stop_hr'))
             stop_min = int(__addon__.getSetting('stop_min'))
-            if time < datetime.time(stop_hr, stop_min):
+            if curr_time.time() < datetime.time(stop_hr, stop_min):
                 return True
         return False
 
@@ -40,6 +60,7 @@ class Service(xbmc.Player):
                 xbmc.executebuiltin(builtin)
 
     def onPlayBackStopped(self):
+        self.last_stopped = datetime.datetime.now()
         if self.idling:
             xbmc.log('BGMusic: Playback stopped, restoring volume')
             self.idling = False
@@ -61,6 +82,8 @@ class Service(xbmc.Player):
                 self.idling = False
                 builtin = "SetVolume(%s)" % self.old_volume
                 xbmc.executebuiltin(builtin)
+        else:
+            self.last_stopped = datetime.datetime.now()
 
     def onQueueNextItem(self):
         if self.idling:
@@ -77,12 +100,10 @@ def get_volume():
     return int(match.group(1))
 
 xbmc.log('BGMusic: Service starting...')
-mon = Service()
-threshold = int(float(__addon__.getSetting('threshold')))
+mon = monitor_service()
 
 while not xbmc.abortRequested:
-    current_idle = divmod(int(xbmc.getGlobalIdleTime()), 60)[0]
-    if not mon.isPlaying() and (current_idle > threshold) and mon.is_armed():
+    if mon.conditions_met():
         mon.idling = True
         mon.old_volume = get_volume()
         new_volume = int(float(__addon__.getSetting('volume')))
@@ -94,13 +115,13 @@ while not xbmc.abortRequested:
         xbmc.log('BGMusic: Starting playback of %s' % pl)
         mon.play(pl)
 
-        if __addon__.getSetting('shuffle') == 'true':
-            shuffle = 'On'
-        else:
-            shuffle = 'Off'
-        xbmc.log('BGMusic: Setting shuffle %s' % shuffle)
-        builtin = 'PlayerControl(Random%s)' % shuffle
-        xbmc.executebuiltin(builtin)
+        # if __addon__.getSetting('shuffle') == 'true':
+        #     shuffle = 'On'
+        # else:
+        #     shuffle = 'Off'
+        # xbmc.log('BGMusic: Setting shuffle %s' % shuffle)
+        # builtin = 'PlayerControl(Random%s)' % shuffle
+        # xbmc.executebuiltin(builtin)
 
         repeat = __addon__.getSetting('repeat')
         if not repeat == 'No Change':
