@@ -12,7 +12,7 @@ __addon__ = xbmcaddon.Addon(__id__)
 class monitor_service(xbmc.Player):
     def __init__(self, *args, **kwargs):
         xbmc.Player.__init__(self, *args, **kwargs)
-        self.old_volume = 50
+        self.old_volume = '50'
         self.last_stopped = datetime.datetime.now()
         self.idling = False
         self.queued = False
@@ -32,7 +32,7 @@ class monitor_service(xbmc.Player):
 
         # Has it been long enough since something stopped playing?
         time_since_stop = curr_time - self.last_stopped
-        if time_since_stop < threshold:
+        if time_since_stop < datetime.timedelta(minutes=threshold):
             return False
 
         # Are we supposed to always play?
@@ -97,7 +97,7 @@ def get_volume():
     volume_query = '{"jsonrpc": "2.0", "method": "Application.GetProperties", "params": { "properties": [ "volume" ] }, "id": 1}'
     result = xbmc.executeJSONRPC(volume_query)
     match = re.search('"volume": ?([0-9]{1,3})', result)
-    return int(match.group(1))
+    return match.group(1)
 
 xbmc.log('BGMusic: Service starting...')
 mon = monitor_service()
